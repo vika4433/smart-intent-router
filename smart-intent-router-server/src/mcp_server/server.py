@@ -6,17 +6,22 @@ from llm_selector.llm_selector import select_llm_model
 from lm_studio_proxy.lm_studio_proxy import send_to_lm_studio
 from response_handler.response_handler import handle_response
 
-
 mcp = FastMCP("SmartIntentRouter")
-
 
 @mcp.tool(title="Route Request")
 async def route_request(text: str) -> dict:
     language = detect_language(text)
     intent = classify_intent(text)
-    model = select_llm_model(intent, language)
-    raw_response = send_to_lm_studio(model, text)
-    return handle_response(raw_response, model, intent, language)
+    model_info = select_llm_model(intent, language)  # Now returns a dict or None
+
+    if not model_info:
+        # No suitable model found; return an error response (customize as needed)
+        return {"error": "No suitable LLM model found for this intent and language."}
+
+    model_name = model_info["model_name"]
+    endpoint = model_info["endpoint"]
+    raw_response = send_to_lm_studio(model_name, text, endpoint)
+    return handle_response(raw_response, model_name, intent, language)
 
 def run_server():
     mcp.run(host="0.0.0.0", port=8080, streamable=True)

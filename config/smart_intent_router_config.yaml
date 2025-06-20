@@ -1,0 +1,49 @@
+models:
+  - name: "llama3"
+    model_name: "llama-3-70b-instruct"
+    endpoint: "http://lmstudio/api/infer"
+    supported_intents: ["general", "creative writing", "translation", "math"]
+    supported_languages: ["en", "es", "fr", "ru", "de", "he", "zh"]
+    weight: 1.0
+    enabled: true
+
+  - name: "deepseek_coder"
+    model_name: "deepseek-coder-33b"
+    endpoint: "http://lmstudio/api/infer"
+    supported_intents: ["code", "math"]
+    supported_languages: ["en", "ru", "he", "fr", "de", "es", "zh"]
+    weight: 1.2
+    enabled: true
+
+  - name: "wizardmath"
+    model_name: "WizardMath-70B-V1.0"
+    endpoint: "http://lmstudio/api/infer"
+    supported_intents: ["math"]
+    supported_languages: ["en", "ru", "he"]
+    weight: 1.3
+    enabled: true
+
+  - name: "qwen2"
+    model_name: "Qwen2-72B"
+    endpoint: "http://lmstudio/api/infer"
+    supported_intents: ["general", "translation", "creative writing"]
+    supported_languages: ["en", "zh", "fr", "es", "de", "ru", "he"]
+    weight: 1.1
+    enabled: false   # Disabled for now, can be enabled later
+
+  - name: "starcoder2"
+    model_name: "starcoder2-15b"
+    endpoint: "http://lmstudio/api/infer"
+    supported_intents: ["code"]
+    supported_languages: ["en", "ru", "fr", "de", "es"]
+    weight: 1.05
+    enabled: true
+
+rules:
+  # Optional direct routing overrides for special cases
+  - intent: "math"
+    language: "he"
+    model: "wizardmath"
+  - intent: "code"
+    language: "ru"
+    model: "deepseek_coder"

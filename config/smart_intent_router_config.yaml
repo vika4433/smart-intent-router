@@ -1,3 +1,16 @@
+
+intents:
+  - name: "general"
+    description: "General conversation and Q&A"
+  - name: "code"
+    description: "Programming and code generation"
+  - name: "translation"
+    description: "Text translation between languages"
+  - name: "creative writing"
+    description: "Creative writing and content generation"
+  - name: "math"
+    description: "Mathematical problem solving and reasoning"
+
 models:
   - name: "llama3"
     model_name: "llama-3-70b-instruct"

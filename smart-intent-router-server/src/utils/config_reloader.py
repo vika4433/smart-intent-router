@@ -3,6 +3,7 @@ import threading
 import time
 from pathlib import Path
 
+CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "smart_intent_router_config.yaml"
 
 class ConfigReloader:
     def __init__(self, config_path):

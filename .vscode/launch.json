@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run MCP Server",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/smart-intent-router-server/src/mcp_server/server.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Run Test Client",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/tests/test_mcp_client.py",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run Server and Test Client",
+      "configurations": [
+        "Run Test Client",
+        "Run MCP Server"
+      ],
+      "stopAll": true
+    }
+  ]
+}
+
+
+

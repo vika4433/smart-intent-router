@@ -1,8 +1,8 @@
 from typing import Optional, Dict, Any
 from pathlib import Path
-from utils.config_reloader import ConfigReloader
+from utils.config_reloader import ConfigReloader, CONFIG_PATH
 
-CONFIG_PATH = Path(__file__).parent.parent.parent / "config" / "smart_intent_router_config.yaml"
+
 config_reloader = ConfigReloader(CONFIG_PATH)
 
 import threading

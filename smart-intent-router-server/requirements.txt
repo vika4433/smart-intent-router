@@ -1,0 +1,8 @@
+mcp[cli]
+openai
+python-dotenv
+ipykernel
+httpx
+modelcontextprotocol
+langdetect
+langid

@@ -19,7 +19,7 @@
       "name": "Run Web Client",
       "type": "python",
       "request": "launch",
-      "program": "${workspaceFolder}/web-client/src/gradio_app.py",
+      "program": "${workspaceFolder}/web-client/src/app.py",
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env"
     }

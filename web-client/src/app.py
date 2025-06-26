@@ -56,12 +56,12 @@ def build_gradio_interface():
         gr.Markdown("## 💬 Smart Intent Router")
         state_obj = gr.State(value=initial_state)
         chatbot = gr.Chatbot(label=None, show_label=False, bubble_full_width=False)
+        user_input = gr.Textbox(
+            placeholder="Type your message...", label="Enter text"
+        )
         with gr.Row():
-            user_input = gr.Textbox(
-                placeholder="Type your message...", label=None, scale=8
-            )
-            send_button = gr.Button("Send", scale=1)
-            clear_button = gr.Button("🗑️ Clear", scale=1)
+            #clear_button = gr.Button("Clear", scale=1)
+            send_button = gr.Button("Submit", scale=1)
         send_button.click(
             fn=send_message_http,
             inputs=[state_obj, user_input],
@@ -76,12 +76,12 @@ def build_gradio_interface():
             concurrency_limit=1,
             queue=True,
         )
-        clear_button.click(
-            fn=clear_chat,
-            inputs=None,
-            outputs=[state_obj, chatbot, user_input],
-            show_progress=False
-        )
+        # clear_button.click(
+        #     fn=clear_chat,
+        #     inputs=None,
+        #     outputs=[state_obj, chatbot, user_input],
+        #     show_progress=False
+        # )
         user_input.submit(fn=lambda: "", inputs=None, outputs=user_input)
     return demo
 

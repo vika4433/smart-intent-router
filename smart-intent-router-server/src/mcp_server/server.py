@@ -17,8 +17,12 @@ from utils.config_reloader import ConfigReloader, CONFIG_PATH
 import json
 import os
 from dotenv import load_dotenv
+from fastapi import FastAPI, Request
+from fastapi.responses import StreamingResponse, JSONResponse
+import uvicorn
+from typing import List, Dict, Any
 
-mcp = FastMCP(name="SmartIntentRouter", host="0.0.0.0", port=8050) #, streamable=True)
+mcp = FastMCP(name="SmartIntentRouter", host="0.0.0.0", port=8080) #, streamable=True)
 
 # Path to the YAML config
 reloader = ConfigReloader(CONFIG_PATH)
@@ -27,7 +31,51 @@ reloader = ConfigReloader(CONFIG_PATH)
 load_dotenv()
 TRANSPORT = os.getenv("TRANSPORT", "sse")
 
-from typing import List, Dict, Any
+app = FastAPI()
+
+@app.post("/route_request_stream")
+async def route_request_stream(request: Request):
+    data = await request.json()
+    messages = data["messages"]
+
+    # Detect language, intent, and model as before
+    latest_user_message = next((msg["content"] for msg in reversed(messages) if msg.get("role") == "user" and "content" in msg), "")
+    if not latest_user_message:
+        return JSONResponse({"error": "No user message found in messages."})
+    language = detect_language(latest_user_message)
+    intent = classify_intent(latest_user_message)
+    model_info = select_llm_model(intent, language)
+    if not model_info:
+        return JSONResponse({"error": "No suitable LLM model found for this intent and language."})
+    model_name = model_info["model_name"]
+    endpoint = model_info["endpoint"]
+
+    # Streaming generator (replace with your real streaming logic if available)
+    async def token_stream():
+        # If send_to_lm_studio can stream, use it here. Otherwise, fake streaming:
+        response = send_to_lm_studio(model_name, messages, endpoint)
+        for token in response.split():
+            yield token + " "
+            import asyncio; await asyncio.sleep(0.05)
+
+    return StreamingResponse(token_stream(), media_type="text/plain")
+
+@app.post("/route_request")
+async def route_request_http(request: Request):
+    data = await request.json()
+    messages = data["messages"]
+    latest_user_message = next((msg["content"] for msg in reversed(messages) if msg.get("role") == "user" and "content" in msg), "")
+    if not latest_user_message:
+        return JSONResponse({"error": "No user message found in messages."})
+    language = detect_language(latest_user_message)
+    intent = classify_intent(latest_user_message)
+    model_info = select_llm_model(intent, language)
+    if not model_info:
+        return JSONResponse({"error": "No suitable LLM model found for this intent and language."})
+    model_name = model_info["model_name"]
+    endpoint = model_info["endpoint"]
+    response = send_to_lm_studio(model_name, messages, endpoint)
+    return JSONResponse({"response": response})
 
 """
 Route a user request with conversational context (OpenAI-style messages) to the appropriate LLM.
@@ -137,6 +185,9 @@ def run_server(transport: str = "stdio"):
     elif transport == "sse":
         print("Running server with SSE transport")
         mcp.run(transport="sse")
+    elif transport == "http":
+        print("Running server with HTTP (FastAPI) transport")
+        uvicorn.run(app, host="0.0.0.0", port=8080)
     else:
         raise ValueError(f"Unknown transport: {transport}")
 
@@ -144,5 +195,7 @@ def run_server(transport: str = "stdio"):
 if __name__ == "__main__":
     if TRANSPORT == "sse":
         run_server(transport="sse")
+    elif TRANSPORT == "http":
+        run_server(transport="http")
     else:
         run_server(transport="stdio")

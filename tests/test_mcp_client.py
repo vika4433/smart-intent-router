@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 nest_asyncio.apply()  # Only needed if running in a Jupyter notebook
 load_dotenv()
-TRANSPORT = os.getenv("TRANSPORT", "sse")
+TRANSPORT = os.getenv("TRANSPORT", "http")
 
 async def wait_for_server(url, timeout=3):
     import httpx
@@ -68,10 +68,34 @@ async def run_stdio():
         async with ClientSession(read_stream, write_stream) as session:
             await run_session(session)
 
+async def run_http():
+    import httpx
+    # Wait for server readiness
+    if not await wait_for_server("http://localhost:8050/route_request", timeout=10):
+        return
+    async with httpx.AsyncClient(timeout=None) as client:
+        # Single-response test
+        print("\n--- HTTP /route_request (single-response) ---")
+        resp = await client.post("http://localhost:8050/route_request", json={
+            "messages": [{"role": "user", "content": "Hello!"}]
+        })
+        print("Response:", resp.json())
+
+        # Streaming test
+        print("\n--- HTTP /route_request_stream (streaming) ---")
+        async with client.stream("POST", "http://localhost:8050/route_request_stream", json={
+            "messages": [{"role": "user", "content": "Hello!"}]
+        }) as stream_resp:
+            print("Streamed response:", end=" ")
+            async for chunk in stream_resp.aiter_text():
+                print(chunk, end="", flush=True)
+            print()
+
 async def main():
-   
     if TRANSPORT == "sse":
         await run_sse()
+    elif TRANSPORT == "http":
+        await run_http()
     else:
         await run_stdio()
 

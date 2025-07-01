@@ -6,7 +6,7 @@ from pathlib import Path
 # Fix: Use the correct config path relative to project root
 CONFIG_PATH = Path(__file__).parent.parent.parent.parent / "config" / "smart_intent_router_config.yaml"
 
-class ConfigReloader:
+class ConfigLoader:
     def __init__(self, config_path):
         self.config_path = config_path
         self.last_mtime = None
@@ -38,6 +38,6 @@ class ConfigReloader:
                 print("Failed to reload config:", e)
 
 # Usage:
-# reloader = ConfigReloader(CONFIG_PATH)
-# threading.Thread(target=reloader.auto_reload, daemon=True).start()
-# # In your model selector: config = reloader.get_config()
+# loader = ConfigLoader(CONFIG_PATH)
+# threading.Thread(target=loader.auto_reload, daemon=True).start()
+# # In your model selector: config = loader.get_config()

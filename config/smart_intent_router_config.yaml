@@ -12,17 +12,25 @@ intents:
     description: "Mathematical problem solving and reasoning"
 
 models:
+  - name: "llama2"
+    model_name: "llama-2-7b-chat"
+    endpoint: "http://localhost:1234/v1/chat/completions"
+    supported_intents: ["general"]
+    supported_languages: ["en", "es", "fr", "ru", "de", "he", "zh"]
+    weight: 1.0
+    enabled: true
+
   - name: "llama3"
     model_name: "llama-3-70b-instruct"
-    endpoint: "http://lmstudio/api/infer"
+    endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["general", "creative writing", "translation", "math"]
     supported_languages: ["en", "es", "fr", "ru", "de", "he", "zh"]
     weight: 1.0
     enabled: true
 
-  - name: "deepseek_coder"
-    model_name: "deepseek-coder-33b"
-    endpoint: "http://lmstudio/api/infer"
+  - name: "qwen_coder"
+    model_name: "Qwen2.5-Coder-7B-Instruct-MLX-4bit"
+    endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["code", "math"]
     supported_languages: ["en", "ru", "he", "fr", "de", "es", "zh"]
     weight: 1.2
@@ -30,7 +38,7 @@ models:
 
   - name: "wizardmath"
     model_name: "WizardMath-70B-V1.0"
-    endpoint: "http://lmstudio/api/infer"
+    endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["math"]
     supported_languages: ["en", "ru", "he"]
     weight: 1.3
@@ -38,7 +46,7 @@ models:
 
   - name: "qwen2"
     model_name: "Qwen2-72B"
-    endpoint: "http://lmstudio/api/infer"
+    endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["general", "translation", "creative writing"]
     supported_languages: ["en", "zh", "fr", "es", "de", "ru", "he"]
     weight: 1.1
@@ -46,17 +54,33 @@ models:
 
   - name: "starcoder2"
     model_name: "starcoder2-15b"
-    endpoint: "http://lmstudio/api/infer"
+    endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["code"]
     supported_languages: ["en", "ru", "fr", "de", "es"]
     weight: 1.05
     enabled: true
 
 rules:
-  # Optional direct routing overrides for special cases
+  - intent: "general"
+    model: "llama2"
   - intent: "math"
-    language: "he"
-    model: "wizardmath"
+    language: "en"
+    model: "llama2"
   - intent: "code"
-    language: "ru"
-    model: "deepseek_coder"
+    language: "en"
+    model: "qwen_coder"
+
+intent_classifier:
+  template: |
+    Analyze the user's message and classify it into one of these intents:
+    - "code": Requests related to programming, algorithms, or code examples
+    - "math": Requests involving mathematical calculations or problems
+    - "general": All other requests
+    
+    Examples:
+    User: "Write a Python function to reverse a string" → "code"
+    User: "How to calculate factorial in Python" → "code"
+    User: "What's the square root of 144?" → "math"
+    User: "Tell me about the history of computers" → "general"
+    
+    Respond with only the intent label ("code", "math", or "general").

@@ -12,7 +12,7 @@ from language_detector.language_detector import detect_language
 from llm_selector.llm_selector import select_llm_model
 from lm_studio_proxy.lm_studio_proxy import send_to_lm_studio
 from response_handler.response_handler import handle_response
-from utils.config_reloader import ConfigReloader, CONFIG_PATH
+from utils.config_loader import ConfigLoader, CONFIG_PATH
 
 import json
 import os
@@ -21,17 +21,21 @@ from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, JSONResponse
 import uvicorn
 from typing import List, Dict, Any
+import requests
+
 
 mcp = FastMCP(name="SmartIntentRouter", host="0.0.0.0", port=8080) #, streamable=True)
 
 # Path to the YAML config
-reloader = ConfigReloader(CONFIG_PATH)
+config = ConfigLoader(CONFIG_PATH).get_config()
 
 # Load environment variables from .env file
 load_dotenv()
 TRANSPORT = os.getenv("TRANSPORT", "sse")
+DEFAULT_INTENT = os.getenv("DEFAULT_INTENT", "general")
 
 app = FastAPI()
+
 
 @app.post("/route_request_stream")
 async def route_request_stream(request: Request):
@@ -43,8 +47,8 @@ async def route_request_stream(request: Request):
     if not latest_user_message:
         return JSONResponse({"error": "No user message found in messages."})
     language = detect_language(latest_user_message)
-    intent = classify_intent(latest_user_message)
-    model_info = select_llm_model(intent, language)
+    intent = classify_intent(latest_user_message, config) or DEFAULT_INTENT
+    model_info = select_llm_model(intent, language, config)
     if not model_info:
         return JSONResponse({"error": "No suitable LLM model found for this intent and language."})
     model_name = model_info["model_name"]
@@ -54,6 +58,7 @@ async def route_request_stream(request: Request):
     async def token_stream():
         # If send_to_lm_studio can stream, use it here. Otherwise, fake streaming:
         response = send_to_lm_studio(model_name, messages, endpoint)
+        print(f"Model response: {response}")
         for token in response.split():
             yield token + " "
             import asyncio; await asyncio.sleep(0.05)
@@ -68,14 +73,21 @@ async def route_request_http(request: Request):
     if not latest_user_message:
         return JSONResponse({"error": "No user message found in messages."})
     language = detect_language(latest_user_message)
-    intent = classify_intent(latest_user_message)
+    intent = classify_intent(latest_user_message) or DEFAULT_INTENT
     model_info = select_llm_model(intent, language)
     if not model_info:
         return JSONResponse({"error": "No suitable LLM model found for this intent and language."})
     model_name = model_info["model_name"]
     endpoint = model_info["endpoint"]
     response = send_to_lm_studio(model_name, messages, endpoint)
-    return JSONResponse({"response": response})
+    return JSONResponse({
+        "response": response,
+        "intent": intent,
+        "language": language,
+        "model_name": model_name
+    })
+
+
 
 """
 Route a user request with conversational context (OpenAI-style messages) to the appropriate LLM.
@@ -105,7 +117,6 @@ async def route_request(messages: List[Dict[str, Any]]) -> dict:
     """
     Route a user request with conversational context (OpenAI-style messages) to the appropriate LLM.
     """
-    # Find the latest user message
     def get_latest_user_message(messages):
         for msg in reversed(messages):
             if msg.get("role") == "user" and "content" in msg:
@@ -121,7 +132,7 @@ async def route_request(messages: List[Dict[str, Any]]) -> dict:
 
     language = detect_language(latest_user_message)
     print(f"Detected language: {language}")
-    intent = classify_intent(latest_user_message)
+    intent = classify_intent(latest_user_message) or DEFAULT_INTENT
     print(f"Classified intent: {intent}")
     model_info = select_llm_model(intent, language)
 
@@ -131,7 +142,13 @@ async def route_request(messages: List[Dict[str, Any]]) -> dict:
     model_name = model_info["model_name"]
     endpoint = model_info["endpoint"]
     raw_response = send_to_lm_studio(model_name, messages, endpoint)
-    return handle_response(raw_response, model_name, intent, language)
+    handled = handle_response(raw_response, model_name, intent, language)
+    return {
+        "response": handled,
+        "intent": intent,
+        "language": language,
+        "model_name": model_name
+    }
 
 # Register resource handlers without calling as a function (no parentheses)
 # @mcp.list_resources
@@ -165,7 +182,6 @@ async def route_request(messages: List[Dict[str, Any]]) -> dict:
 
 @mcp.read_resource
 def read_resource(uri: str):
-    config = reloader.get_config()
     if uri == "router://intents":
         return json.dumps(config.get("intents", []), ensure_ascii=False, indent=2)
     elif uri == "router://models":
@@ -190,6 +206,7 @@ def run_server(transport: str = "stdio"):
         uvicorn.run(app, host="0.0.0.0", port=8080)
     else:
         raise ValueError(f"Unknown transport: {transport}")
+
 
 # Run the server
 if __name__ == "__main__":

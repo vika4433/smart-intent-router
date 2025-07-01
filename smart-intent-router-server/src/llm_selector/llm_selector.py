@@ -1,20 +1,20 @@
 from typing import Optional, Dict, Any
 from pathlib import Path
-from utils.config_reloader import ConfigReloader, CONFIG_PATH
+#from utils.config_reloader import ConfigReloader, CONFIG_PATH
 
 
-config_reloader = ConfigReloader(CONFIG_PATH)
+#config_reloader = ConfigReloader(CONFIG_PATH)
 
-import threading
-threading.Thread(target=config_reloader.auto_reload, daemon=True).start()
+# import threading
+# threading.Thread(target=config_reloader.auto_reload, daemon=True).start()
 
-def select_llm_model(intent: str, language: str) -> Optional[Dict[str, Any]]:
+def select_llm_model(intent: str, language: str, config: dict) -> Optional[Dict[str, Any]]:
     """
     Select the best LLM model based on intent and language.
 
     Returns a dict with at least "model_name" and "endpoint".
     """
-    config = config_reloader.get_config()
+    #config = config_reloader.get_config()
     if not config:
         return None
 

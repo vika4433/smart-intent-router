@@ -20,7 +20,7 @@ def detect_language(text: str) -> str:
         return "unknown"
 
     # You can tune this threshold!
-    threshold = 30
+    threshold = 200
 
     try:
         if len(text) < threshold:

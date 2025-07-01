@@ -1,16 +1,77 @@
-def send_to_lm_studio(model: str, text: str) -> str:
+import re
+from typing import List, Dict, Any
+import requests
+
+def send_to_lm_studio(
+    model_name: str,
+    messages: List[Dict[str, Any]],
+    endpoint: str = "http://localhost:1234/v1/chat/completions"
+) -> str:
     """
-    Send the request to the specified LM Studio model and return the response.
-
-    NOTE: This function must remain stateless and thread-safe.
-    It should not rely on or modify any global/shared state, to ensure safe use in multi-client, concurrent environments.
-
-    TODO: Replace this stub with actual LM Studio proxy logic (e.g., HTTP/gRPC call to LM Studio API and response handling).
-
-    Args:
-        model (str): The identifier or endpoint of the target LM Studio model.
-        text (str): The input text to send for processing.
-    Returns:
-        str: The response returned by LM Studio.
+    Sends a list of OpenAI-style messages to LM Studio and returns the assistant's response text.
+    Ensures code blocks are properly formatted.
     """
-    return f"Response from {model}: {text}"
+    payload = {
+        "model": model_name,
+        "messages": messages,
+        "temperature": 0.7
+    }
+
+    try:
+        response = requests.post(endpoint, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        raw = result['choices'][0]['message']['content']
+        fixed = normalize_code_blocks(raw)
+        return fixed
+    except Exception as e:
+        return f"Error communicating with LM Studio: {e}"
+
+
+def normalize_code_blocks(text: str) -> str:
+    """
+    Ensures all code blocks are properly wrapped using triple backticks with syntax highlighting.
+    - Fixes inline or malformed code blocks
+    - Adds ```python for code that looks like Python but isn't wrapped
+    """
+    text = fix_inline_code_blocks(text)
+    text = wrap_unwrapped_python_code(text)
+    return text
+
+
+def fix_inline_code_blocks(text: str) -> str:
+    """
+    Converts single-line or inline triple backtick code to proper formatted blocks.
+    Example:
+        '``` def foo(): return bar ```' → '```python\ndef foo(): return bar\n```'
+    """
+    pattern = r"```(.*?)```"  # Matches content between triple backticks
+    def replacer(match):
+        code = match.group(1).strip()
+        if not code.startswith("python"):
+            return f"```python\n{code}\n```"
+        return match.group(0)
+
+    return re.sub(pattern, replacer, text, flags=re.DOTALL)
+
+
+def wrap_unwrapped_python_code(text: str) -> str:
+    """
+    If the beginning of the message looks like a Python function or code snippet
+    and is not already inside a code block, wrap it in a Python code block.
+    """
+    lines = text.strip().splitlines()
+    if not lines:
+        return text
+
+    if lines[0].strip().startswith("def ") and "```" not in text:
+        code_lines = []
+        i = 0
+        while i < len(lines) and lines[i].strip():
+            code_lines.append(lines[i])
+            i += 1
+        wrapped = "```python\n" + "\n".join(code_lines) + "\n```"
+        remainder = "\n".join(lines[i:])
+        return f"{wrapped}\n\n{remainder}".strip()
+
+    return text

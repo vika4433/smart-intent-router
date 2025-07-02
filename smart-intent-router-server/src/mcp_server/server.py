@@ -41,8 +41,11 @@ app = FastAPI()
 async def route_request_stream(request: Request):
     data = await request.json()
     messages = data["messages"]
+    # Add markdown system prompt
+    markdown_system_prompt = config.get("system_templates", {}).get("markdown_response", "")
+    if markdown_system_prompt:
+        messages = [{"role": "system", "content": markdown_system_prompt}] + messages
 
-    # Detect language, intent, and model as before
     latest_user_message = next((msg["content"] for msg in reversed(messages) if msg.get("role") == "user" and "content" in msg), "")
     if not latest_user_message:
         return JSONResponse({"error": "No user message found in messages."})
@@ -69,17 +72,22 @@ async def route_request_stream(request: Request):
 async def route_request_http(request: Request):
     data = await request.json()
     messages = data["messages"]
+    # Add markdown system prompt
+    markdown_system_prompt = config.get("system_templates", {}).get("markdown_response", "")
+    if markdown_system_prompt:
+        messages = [{"role": "system", "content": markdown_system_prompt}] + messages
     latest_user_message = next((msg["content"] for msg in reversed(messages) if msg.get("role") == "user" and "content" in msg), "")
     if not latest_user_message:
         return JSONResponse({"error": "No user message found in messages."})
     language = detect_language(latest_user_message)
-    intent = classify_intent(latest_user_message) or DEFAULT_INTENT
-    model_info = select_llm_model(intent, language)
+    intent = classify_intent(latest_user_message, config) or DEFAULT_INTENT
+    model_info = select_llm_model(intent, language, config)
     if not model_info:
         return JSONResponse({"error": "No suitable LLM model found for this intent and language."})
     model_name = model_info["model_name"]
     endpoint = model_info["endpoint"]
     response = send_to_lm_studio(model_name, messages, endpoint)
+    print(f"Model response: {response}")
     return JSONResponse({
         "response": response,
         "intent": intent,

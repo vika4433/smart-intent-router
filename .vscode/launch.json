@@ -15,13 +15,27 @@
       "program": "${workspaceFolder}/tests/test_mcp_client.py",
       "console": "integratedTerminal"
     },
+    // {
+    //   "name": "Run Web Client",
+    //   "type": "python",
+    //   "request": "launch",
+    //   "program": "${workspaceFolder}/web-client/src/app.py",
+    //   "console": "integratedTerminal",
+    //   "envFile": "${workspaceFolder}/.env"
+    // }
     {
-      "name": "Run Web Client",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/web-client/src/app.py",
-      "console": "integratedTerminal",
-      "envFile": "${workspaceFolder}/.env"
+    "name": "Run Web Client",
+    "type": "python",
+    "request": "launch",
+    "module": "streamlit",
+    "args": [
+        "run",
+        "${workspaceFolder}/web-client/src/app.py",
+        "--server.port",
+        "8501"
+    ],
+    "console": "integratedTerminal",
+    "envFile": "${workspaceFolder}/.env"
     }
   ],
   "compounds": [

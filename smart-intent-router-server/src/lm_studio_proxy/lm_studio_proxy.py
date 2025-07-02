@@ -8,8 +8,8 @@ def send_to_lm_studio(
     endpoint: str = "http://localhost:1234/v1/chat/completions"
 ) -> str:
     """
-    Sends a list of OpenAI-style messages to LM Studio and returns the assistant's response text.
-    Ensures code blocks are properly formatted.
+    Sends messages to LM Studio and returns the raw assistant response.
+    No formatting or normalization is applied.
     """
     payload = {
         "model": model_name,
@@ -20,10 +20,7 @@ def send_to_lm_studio(
     try:
         response = requests.post(endpoint, json=payload)
         response.raise_for_status()
-        result = response.json()
-        raw = result['choices'][0]['message']['content']
-        fixed = normalize_code_blocks(raw)
-        return fixed
+        return response.json()['choices'][0]['message']['content']
     except Exception as e:
         return f"Error communicating with LM Studio: {e}"
 

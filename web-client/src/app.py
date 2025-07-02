@@ -1,175 +1,138 @@
-import gradio as gr
-import asyncio
+import streamlit as st
 import httpx
 import os
-from dotenv import load_dotenv
 import re
+import asyncio
+from typing import List, Dict, Any
+from dotenv import load_dotenv
 
 load_dotenv()
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8080")
 
-def ensure_code_blocks(text: str) -> str:
-    """
-    Ensure proper Markdown formatting and handle single-line code blocks as multi-line.
-    """
-    # Normalize triple backticks if not typed correctly
-    text = re.sub(r"```(python)?", "```python", text)
+def clean_response(response: str) -> str:
+    """Fix common formatting issues in LLM responses"""
+    # Normalize code block markers
+    response = re.sub(r'```(\w*)', r'\n```\1\n', response)
+    response = response.replace('```', '\n```\n')
+    # Fix pip install commands
+    response = re.sub(r'pip install py pdf2', 'pip install pypdf2', response)
+    return response.strip()
 
-    # Split once at the first code block
-    parts = text.split("```python")
-    if len(parts) < 2:
-        return text  # No code block found
-
-    before_code = parts[0]
-    rest = "```python".join(parts[1:])
-    code_parts = rest.split("```", 1)
-
-    code = code_parts[0].strip()
-    after_code = code_parts[1] if len(code_parts) > 1 else ""
-
-    # If code is a one-liner, format it as multiline
-    if '\n' not in code and ';' not in code:
-        # Try to split on common patterns like `def x(): return y`
-        if "return " in code:
-            code = code.replace("): ", "):\n    ", 1)
-
-    multiline_code = f"```python\n{code}\n```"
-
-    return f"{before_code}\n\n{multiline_code}\n\n{after_code.strip()}"
-
-def format_conversation(messages):
-    """Ensures newlines are preserved in the output"""
-    formatted = []
-    for msg in messages:
-        if msg["role"] == "user":
-            formatted.append(f"**You:** {msg['content']}\n")
-        elif msg["role"] == "assistant":
-            content = msg['content']
-            
-            # First preserve all newlines by replacing them with a special marker
-            content = content.replace('\n', '⏎')
-            
-            # Apply code block formatting
-            content = ensure_code_blocks(content)
-            
-            # Restore newlines (they'll now be inside proper markdown blocks)
-            content = content.replace('⏎', '\n')
-            
-            formatted.append(f"**Assistant:**\n\n{content}\n")
+def display_markdown_with_code(response: str):
+    """Render markdown with perfect code block handling"""
+    # Inject custom CSS
+    st.markdown("""
+    <style>
+        /* Main text container */
+        .stMarkdown {
+            line-height: 1.7;
+            font-size: 16px;
+            color: #333;
+        }
+        
+        /* Code block styling */
+        div[data-testid="stCodeBlock"] {
+            margin: 1.5em 0;
+            border-radius: 8px;
+            border-left: 4px solid #4e8cff;
+            background: #f8f9fa;
+        }
+        
+        /* Code text */
+        pre {
+            white-space: pre-wrap;
+            font-family: 'SFMono-Regular', Menlo, monospace;
+            padding: 1em !important;
+            margin: 0;
+        }
+        
+        /* Inline code */
+        code:not(pre code) {
+            background: #f3f4f6;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-size: 0.9em;
+            font-family: 'SFMono-Regular', Menlo, monospace;
+        }
+        
+        /* Fix spacing between paragraphs */
+        .stMarkdown p {
+            margin-bottom: 1em;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     
-    # Use TWO newlines between messages to ensure proper spacing
-    return "\n\n---\n\n".join(formatted)
+    # Split response into segments
+    segments = re.split(r'(```[\s\S]*?```)', response)
+    
+    for segment in segments:
+        if segment.startswith('```'):
+            # Process code block
+            language_match = re.match(r'```(\w+)', segment)
+            language = language_match.group(1) if language_match else ''
+            code_content = re.sub(r'```(\w+)?\n?', '', segment).replace('```', '')
+            
+            if language:
+                st.markdown(f'<div style="font-family: monospace; color: #666; font-size: 0.9em;">{language}</div>', 
+                           unsafe_allow_html=True)
+            st.code(code_content, language=language.lower() if language else None)
+        else:
+            # Process regular text
+            if segment.strip():
+                st.markdown(segment, unsafe_allow_html=True)
 
-async def send_message_http(state, user_input):
-    """Send message to server and stream the response."""
-    if not user_input.strip():
-        yield state, format_conversation(state["messages"]), ""
-        return
-
-    messages = state["messages"]
-    messages.append({"role": "user", "content": user_input})
-    reply = ""
-
+async def send_message(messages: List[Dict[str, Any]]) -> str:
+    """Send messages to API endpoint"""
     try:
-        async with httpx.AsyncClient(timeout=100.0) as client:
-            async with client.stream(
-                "POST",
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0)) as client:
+            response = await client.post(
                 f"{SERVER_URL}/route_request_stream",
                 json={"messages": messages}
-            ) as resp:
-                
-                if resp.status_code != 200:
-                    reply = f"Server error: {resp.status_code}"
-                    messages.append({"role": "assistant", "content": reply})
-                    yield state, format_conversation(messages), ""
-                    return
-                
-                async for chunk in resp.aiter_text():
-                    reply += chunk
-                    yield state, format_conversation(messages + [{"role": "assistant", "content": reply}]), ""
-
-    except httpx.ConnectError:
-        reply = "Error: Could not connect to server. Please check if it's running."
+            )
+            response.raise_for_status()
+            return clean_response(response.text)
     except Exception as e:
-        reply = f"Error: {str(e)}"
+        return f"Error: {str(e)}"
+
+def display_chat_message(role: str, content: str):
+    """Display chat message with proper formatting"""
+    with st.chat_message(role):
+        if role == "assistant":
+            if content.startswith("Error:"):
+                st.error(content)
+            else:
+                display_markdown_with_code(content)
+        else:
+            st.markdown(content)
+
+def main():
+    st.set_page_config(
+        page_title="Smart Code Assistant",
+        layout="wide",
+        initial_sidebar_state="collapsed"
+    )
+    st.title("💬 Smart Code Assistant")
     
-    messages.append({"role": "assistant", "content": reply})
-    yield state, format_conversation(messages), ""
-
-def clear_chat():
-    """Clear the chat history."""
-    return {"messages": []}, "", ""
-
-def build_gradio_interface():
-    """Build and configure the Gradio interface."""
-    initial_state = {"messages": []}
-
-    with gr.Blocks(css="""
-    /* Force all whitespace to be preserved */
-    .gr-markdown {
-        white-space: pre-wrap !important;
-    }
+    # Initialize chat history
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
     
-    /* Code blocks specifically */
-    .gr-markdown pre {
-        white-space: pre !important;
-        display: block !important;
-        margin: 1em 0 !important;
-    }
+    # Display chat history
+    for msg in st.session_state.messages:
+        display_chat_message(msg["role"], msg["content"])
     
-    /* Regular text with preserved newlines */
-    .gr-markdown p {
-        white-space: pre-wrap !important;
-        margin: 1em 0 !important;
-    }
-    
-    /* Lists with preserved formatting */
-    .gr-markdown ul, .gr-markdown ol {
-        white-space: normal !important;
-    }
-""") as demo:
-
-        gr.Markdown("## 💬 Smart Intent Router")
-
-        state_obj = gr.State(value=initial_state)
-        chat_display = gr.Markdown(value="", elem_id="chat-markdown", elem_classes="chat-box")
-        user_input = gr.Textbox(
-            placeholder="Type your message...",
-            label="Enter text",
-            show_label=False
-        )
-
-        with gr.Row():
-            send_button = gr.Button("Submit", scale=1)
-            clear_button = gr.Button("Clear", scale=1)
-
-        send_button.click(
-            fn=send_message_http,
-            inputs=[state_obj, user_input],
-            outputs=[state_obj, chat_display, user_input],
-            concurrency_limit=1,
-            queue=True,
-        )
-
-        user_input.submit(
-            fn=send_message_http,
-            inputs=[state_obj, user_input],
-            outputs=[state_obj, chat_display, user_input],
-            concurrency_limit=1,
-            queue=True,
-        )
-
-        clear_button.click(
-            fn=clear_chat,
-            inputs=None,
-            outputs=[state_obj, chat_display, user_input],
-            show_progress=False
-        )
-
-        user_input.submit(fn=lambda: "", inputs=None, outputs=user_input)
-
-    return demo
+    # Handle user input
+    if prompt := st.chat_input("Ask about Python code..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        display_chat_message("user", prompt)
+        
+        with st.spinner("Generating response..."):
+            try:
+                response = asyncio.run(send_message(st.session_state.messages))
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                display_chat_message("assistant", response)
+            except Exception as e:
+                st.error(f"Unexpected error: {str(e)}")
 
 if __name__ == "__main__":
-    demo = build_gradio_interface()
-    demo.launch(server_name="0.0.0.0", server_port=7860, share=True)
+    main()

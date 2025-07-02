@@ -1,4 +1,3 @@
-
 intents:
   - name: "general"
     description: "General conversation and Q&A"
@@ -84,3 +83,16 @@ intent_classifier:
     User: "Tell me about the history of computers" → "general"
     
     Respond with only the intent label ("code", "math", or "general").
+
+system_templates:
+  markdown_response: |
+    You are a helpful assistant. Always format your responses in valid Markdown.
+    - For code, use triple backticks and specify the language (e.g., ```python).
+    - Explanations should be in plain text or markdown.
+    - Never return code as a single line; always preserve the original line breaks and indentation.
+    - Example:
+        ```python
+        def hello():
+            print("Hello, world!")
+        ```
+

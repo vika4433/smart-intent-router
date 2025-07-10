@@ -18,6 +18,7 @@ models:
     supported_languages: ["en", "es", "fr", "ru", "de", "he", "zh"]
     weight: 1.0
     enabled: true
+    context_length: 4096
 
   - name: "llama3"
     model_name: "llama-3-70b-instruct"
@@ -26,6 +27,7 @@ models:
     supported_languages: ["en", "es", "fr", "ru", "de", "he", "zh"]
     weight: 1.0
     enabled: true
+    context_length: 8192
 
   - name: "qwen_coder"
     model_name: "Qwen2.5-Coder-7B-Instruct-MLX-4bit"
@@ -34,6 +36,7 @@ models:
     supported_languages: ["en", "ru", "he", "fr", "de", "es", "zh"]
     weight: 1.2
     enabled: true
+    context_length: 32768
 
   - name: "wizardmath"
     model_name: "WizardMath-70B-V1.0"
@@ -42,6 +45,7 @@ models:
     supported_languages: ["en", "ru", "he"]
     weight: 1.3
     enabled: true
+    context_length: 4096
 
   - name: "qwen2"
     model_name: "Qwen2-72B"
@@ -50,6 +54,7 @@ models:
     supported_languages: ["en", "zh", "fr", "es", "de", "ru", "he"]
     weight: 1.1
     enabled: false   # Disabled for now, can be enabled later
+    context_length: 32768
 
   - name: "starcoder2"
     model_name: "starcoder2-15b"
@@ -58,6 +63,7 @@ models:
     supported_languages: ["en", "ru", "fr", "de", "es"]
     weight: 1.05
     enabled: true
+    context_length: 8192
 
 rules:
   - intent: "general"

@@ -38,14 +38,6 @@ Or simply use the VS Code GUI to “Open Folder…”
 
 ## ✅ MongoDB + Compass Installation Guide
 
----
-
-### 🧪 macOS
-
-Absolutely, here’s a concise **macOS installation block** for MongoDB (with Homebrew):
-
----
-
 ### 🧪 macOS
 
 #### 1. **Install MongoDB via Homebrew**
@@ -62,11 +54,6 @@ brew install mongodb-community@7.0
 ```bash
 brew services start mongodb-community@7.0
 ```
-
----
-
-Let me know if you need the next steps or want it even shorter!
-
 
 ### 🧪 Windows
 

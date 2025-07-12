@@ -228,7 +228,7 @@ def main():
     for msg in st.session_state.messages:
         display_chat_message(msg["role"], msg["content"])
     # Handle new user message
-    if prompt := st.chat_input("Ask about Python code..."):
+    if prompt := st.chat_input("Type your question or request (code, writing, math, translation, etc.)..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         display_chat_message("user", prompt)
         with st.spinner("Thinking..."):

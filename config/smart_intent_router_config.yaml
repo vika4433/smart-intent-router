@@ -30,7 +30,7 @@ models:
     context_length: 8192
 
   - name: "qwen_coder"
-    model_name: "Qwen2.5-Coder-7B-Instruct-MLX-4bit"
+    model_name: "qwen2.5-coder-7b-instruct-mlx" #"Qwen2.5-Coder-7B-Instruct-MLX-4bit"
     endpoint: "http://localhost:1234/v1/chat/completions"
     supported_intents: ["code", "math"]
     supported_languages: ["en", "ru", "he", "fr", "de", "es", "zh"]
@@ -80,6 +80,8 @@ intent_classifier:
     Analyze the user's message and classify it into one of these intents:
     - "code": Requests related to programming, algorithms, or code examples
     - "math": Requests involving mathematical calculations or problems
+    - "translation": Requests to translate text from one language to another
+    - "creative writing": Requests to write stories, emails, poems, or other creative content
     - "general": All other requests
     
     Examples:
@@ -87,8 +89,13 @@ intent_classifier:
     User: "How to calculate factorial in Python" → "code"
     User: "What's the square root of 144?" → "math"
     User: "Tell me about the history of computers" → "general"
+    User: "Translate 'Hello' to French" → "translation"
+    User: "Translate this sentence to Spanish: 'How are you?'" → "translation"
+    User: "Write a story about a brave knight" → "creative writing"
+    User: "Compose an email to my boss about a meeting" → "creative writing"
+    User: "Write a poem about the sea" → "creative writing"
     
-    Respond with only the intent label ("code", "math", or "general").
+    Respond with only the intent label ("code", "math", "translate", "creative writing", or "general").
 
 system_templates:
   markdown_response: |

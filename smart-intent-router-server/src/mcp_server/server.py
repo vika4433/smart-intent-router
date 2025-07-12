@@ -29,8 +29,8 @@ mcp = FastMCP(name="smart-intent-router", port=3000, json_response=False, statel
 repository_instance = MongoConversationRepository()
 conversation_manager = ConversationManager(repository_instance)
 
-@mcp.tool()
-async def classify_intent_only(message: str) -> dict:
+@mcp.tool(name="classify_intent")
+async def classify_intent_tool(message: str) -> dict:
     language = detect_language(message)
     intent = classify_intent(message, config) or DEFAULT_INTENT
     model_info = select_llm_model(intent, language, config)
@@ -41,70 +41,81 @@ async def classify_intent_only(message: str) -> dict:
         "message": "Intent classified successfully. Use route_with_intent() to send to model."
     }
 
+@mcp.tool(name="detect_language")
+async def detect_language_tool(prompt: str) -> dict:
+    """Detect language for a given prompt."""
+    language = detect_language(prompt)
+    return {"language": language}
+
+@mcp.tool(name="select_llm_model")
+async def select_llm_model_tool(intent: str, language: str) -> dict:
+    """Select LLM model for given intent and language."""
+    model_info = select_llm_model(intent, language, config)
+    if not model_info:
+        return {"error": "No suitable LLM model found"}
+    return {"model_info": model_info}
+
 @mcp.tool()
 async def route_request(
     message: str,
     user_id: str = "default_user",
     session_id: str = None,
-    conversation_id: str = None
-) -> dict:
-    intent = classify_intent(message, config) or DEFAULT_INTENT
-
-    if not session_id:
-        session_id = SessionManager.get_user_session(user_id) or SessionManager.create_session(user_id)
-
-    if not conversation_id:
-        session_data = SessionManager.get_session(session_id)
-        conversation_id = session_data["active_conversation_id"] if session_data else ConversationManager.create_conversation(session_id)
-
-    return await route_with_intent(
-        message=message,
-        intent=intent,
-        session_id=session_id,
-        conversation_id=conversation_id,
-        user_id=user_id
-    )
-
-@mcp.tool()
-async def route_with_intent(
-    message: str,
-    intent: str,
-    session_id: str = None,
     conversation_id: str = None,
-    user_id: str = "default_user"
+    intent: str = None,
+    language: str = None,
+    llm: str = None
 ) -> dict:
-    # Ensure session_id and user_id are set
-    if not session_id:
-        session_id = SessionManager.get_user_session(user_id) or SessionManager.create_session(user_id)
-    if not user_id:
-        # Try to resolve user_id from session
-        session_data = SessionManager.get_session(session_id)
-        user_id = session_data["user_id"] if session_data and "user_id" in session_data else "default_user"
-
-    # Ensure conversation_id is set and user-centric
-    if not conversation_id:
-        session_data = SessionManager.get_session(session_id)
-        conversation_id = session_data["active_conversation_id"] if session_data and "active_conversation_id" in session_data else conversation_manager.create_conversation(user_id)
-
-    language = detect_language(message)
-    model_info = select_llm_model(intent, language, config)
+    # Step 1: intent
+    if not intent:
+        intent = classify_intent(message, config) or DEFAULT_INTENT
+    else:
+        # Validate intent (simple check: must be in config intents)
+        valid_intents = config.get("intents", [])
+        if valid_intents and intent not in valid_intents:
+            intent = classify_intent(message, config) or DEFAULT_INTENT
+    # Step 2: language
+    if not language:
+        language = detect_language(message)
+    else:
+        # Validate language (simple check: must be in config languages)
+        valid_languages = config.get("languages", [])
+        if valid_languages and language not in valid_languages:
+            language = detect_language(message)
+    # Step 3: llm/model_name
+    model_info = None
+    if not llm:
+        model_info = select_llm_model(intent, language, config)
+    else:
+        # Validate llm (must be in config models)
+        valid_models = [m.get("model_name") for m in config.get("models", [])]
+        if valid_models and llm not in valid_models:
+            model_info = select_llm_model(intent, language, config)
+        else:
+            # Find model_info for llm
+            for m in config.get("models", []):
+                if m.get("model_name") == llm:
+                    model_info = m
+                    break
+            if not model_info:
+                model_info = select_llm_model(intent, language, config)
     if not model_info:
         return {"error": "No suitable LLM model found"}
-
     model_name = model_info["model_name"]
     endpoint = model_info["endpoint"]
     context_limit = model_info.get("context_length", 2000)
-
-    # Use the global conversation_manager instance, but update max_tokens if needed
+    # Session and conversation logic
+    if not session_id:
+        session_id = SessionManager.get_user_session(user_id) or SessionManager.create_session(user_id)
+    if not conversation_id:
+        session_data = SessionManager.get_session(session_id)
+        conversation_id = session_data["active_conversation_id"] if session_data and "active_conversation_id" in session_data else conversation_manager.create_conversation(user_id)
     conversation_manager.max_tokens = context_limit
     context_messages = conversation_manager.get_smart_context(conversation_id, intent, include_summary=True)
-
     def to_openai_message(m):
         content = m.get("content", "")
         if isinstance(content, dict):
             content = content.get("response", str(content))
         return {"role": m.get("role"), "content": content}
-
     openai_messages = []
     if config.get("system_templates", {}).get("markdown_response"):
         openai_messages.append({
@@ -113,21 +124,27 @@ async def route_with_intent(
         })
     openai_messages += [to_openai_message(m) for m in context_messages]
     openai_messages.append({"role": "user", "content": message})
-
     conversation_manager.add_message(conversation_id, "user", message, intent, model_name)
     raw_response = send_to_lm_studio(model_name, openai_messages, endpoint)
-    # Use only the arguments that handle_response expects (4 positional args)
     result = handle_response(
         raw_response,
         model_name,
         intent,
         language
     )
-    # Ensure result is always a dict with a 'response' key
     if not isinstance(result, dict):
         result = {"response": result}
     conversation_manager.add_message(conversation_id, "assistant", result.get("response"), intent, model_name)
-    return result
+    return {
+        "response": result.get("response"),
+        "intent": intent,
+        "language": language,
+        "model": model_name,
+        "model_info": model_info,
+        "conversation_id": conversation_id,
+        "session_id": session_id
+    }
+
 
 @mcp.tool()
 async def create_conversation(user_id: str = None, session_id: str = None, title: str = None) -> dict:
@@ -166,6 +183,8 @@ async def check_session(session_id: str) -> dict:
     if not session:
         return {"active": False}
     return {"active": True, "expires_at": session["expires_at"].isoformat()}
+
+
 
 
 def main():

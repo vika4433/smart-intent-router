@@ -1,3 +1,39 @@
+## 🛠️ Install Visual Studio Code
+
+### **1. Download and Install VS Code**
+
+#### 🧪 **macOS / Windows / Linux**
+
+* Go to the official Visual Studio Code website:
+  👉 [https://code.visualstudio.com/](https://code.visualstudio.com/)
+
+* Click **Download for your OS** (macOS, Windows, or Linux).
+
+* Run the downloaded installer and follow the setup wizard.
+
+#### **(Optional) Add 'code' Command to Your PATH**
+
+* On first launch, VS Code will often prompt to add the `code` command to your system PATH.
+* If not prompted, you can do this manually:
+
+  * **macOS/Linux:**
+    Open VS Code, press <kbd>Cmd</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd>, type “Shell Command: Install ‘code’ command in PATH”, and press Enter.
+  * **Windows:**
+    Usually added automatically. If not, see the official docs:
+    [Add 'code' to PATH](https://code.visualstudio.com/docs/setup/windows#_command-line-interface-cli)
+
+---
+
+**Once installed, you can open a project folder from your terminal:**
+
+```bash
+cd <your-project-directory>
+code .
+```
+
+Or simply use the VS Code GUI to “Open Folder…”
+
+
 
 
 ## ✅ MongoDB + Compass Installation Guide
@@ -6,9 +42,31 @@
 
 ### 🧪 macOS
 
-(Instructions remain the same as before)
+Absolutely, here’s a concise **macOS installation block** for MongoDB (with Homebrew):
 
 ---
+
+### 🧪 macOS
+
+#### 1. **Install MongoDB via Homebrew**
+
+If you don't have Homebrew installed, install it first from [https://brew.sh/](https://brew.sh/).
+
+```bash
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+```
+
+#### 2. **Start the MongoDB service**
+
+```bash
+brew services start mongodb-community@7.0
+```
+
+---
+
+Let me know if you need the next steps or want it even shorter!
+
 
 ### 🧪 Windows
 

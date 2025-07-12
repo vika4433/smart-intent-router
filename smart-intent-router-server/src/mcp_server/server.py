@@ -117,10 +117,13 @@ async def route_request(
             content = content.get("response", str(content))
         return {"role": m.get("role"), "content": content}
     openai_messages = []
-    if config.get("system_templates", {}).get("markdown_response"):
+    # Add the correct system message for the classified intent
+    system_templates = config.get("system_templates", {})
+    system_message = system_templates.get(intent, system_templates.get("general", ""))
+    if system_message:
         openai_messages.append({
             "role": "system",
-            "content": config.get("system_templates", {}).get("markdown_response", "")
+            "content": system_message
         })
     openai_messages += [to_openai_message(m) for m in context_messages]
     openai_messages.append({"role": "user", "content": message})

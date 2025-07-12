@@ -284,4 +284,17 @@ Here’s an updated and **concise guide** for downloading exactly these models i
 * To allow apps to connect (e.g., via OpenAI API), go to **Settings → API** and toggle on the API server.
 
 
+Absolutely! Here’s the standalone instruction:
+
+---
+
+### 5 **Start the LM Studio API Server**
+
+After downloading your model:
+
+1. **Click the Developer (\</>) icon** in the left sidebar.
+2. In the **“OpenAI Compatible API Server”** section, click **“Status: Stopped”** to toggle it to **“Status: Running”**.
+3. The server is now running and ready to accept API requests.
+
+---
 

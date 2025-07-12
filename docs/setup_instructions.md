@@ -1,12 +1,3 @@
-Setup Instructions: 
-
-1. Clone github repository from command line: 
-1.1 git clone https://github.com/vika4433/smart-intent-router.git
-1.2 cd smart-intent-router
-1.3 code .
-This opens a smart intent router project in VS Code
-
-
 
 
 ## ✅ MongoDB + Compass Installation Guide

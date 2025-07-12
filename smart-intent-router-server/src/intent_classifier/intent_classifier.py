@@ -20,8 +20,8 @@ def classify_intent(text: str, config: dict) -> str:
     ]
     
     translate_keywords = [
-        'translate', 'translation', 'to english', 'to french', 'to spanish', 'to german', 'to russian', 'to hebrew', 'to chinese',
-        'in english', 'in french', 'in spanish', 'in german', 'in russian', 'in hebrew', 'in chinese'
+        'translate', 'translation', 'translate to english', 'translate to french', 'translate to spanish', 'translate to german', 'translate to russian', 'translate to hebrew', 'translate to chinese',
+        'translation to english', 'translation to french', 'translation to spanish', 'translation to german', 'translation to russian', 'translation to hebrew', 'translation to chinese'
     ]
     
     creative_writing_keywords = [

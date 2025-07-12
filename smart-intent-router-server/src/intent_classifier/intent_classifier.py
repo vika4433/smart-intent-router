@@ -63,16 +63,23 @@ def classify_intent(text: str, config: dict) -> str:
         # Remove quotes and prefix if present
         for intent_label in ["code", "math", "translation", "creative writing", "general"]:
             if resp == intent_label:
-                return intent_label
+                llm_intent = intent_label
+                break
             # Accept quoted or prefixed forms
             if resp.replace('"', '').replace("'", "") == intent_label:
-                return intent_label
+                llm_intent = intent_label
+                break
             if resp.startswith("intent:"):
                 candidate = resp.split(":", 1)[1].strip().replace('"', '').replace("'", "")
                 if candidate == intent_label:
-                    return intent_label
-        # If not matched, fallback to general
-        return "general"
+                    llm_intent = intent_label
+                    break
+        else:
+            llm_intent = "general"
+        # Post-process: Only allow 'translation' if explicit translation keywords are present
+        if llm_intent == "translation" and not any(keyword in text_lower for keyword in translate_keywords):
+            return "general"
+        return llm_intent
     except Exception as e:
         print("Intent classification failed:", e)
         return "general"

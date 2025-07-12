@@ -108,6 +108,7 @@ system_templates:
         The waves crash gently on the shore...
   general: |
     You are a helpful assistant. Format all responses in Markdown. Use lists, headings, and formatting to make information clear and easy to read. For factual answers, cite sources if possible.
+    If the user requests an answer in a specific language, respond only in that language and do not provide translations or explanations in other languages unless explicitly asked.
     - Example:
         ## The History of Computers
         Computers have evolved rapidly since the 20th century...

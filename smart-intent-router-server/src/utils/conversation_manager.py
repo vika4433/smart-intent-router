@@ -134,7 +134,12 @@ class ConversationManager:
 
         message_count = conversation.num_messages
         if message_count > 30 and include_summary:
-            summary = self.create_conversation_summary(conversation_id, current_intent)
+            # Defensive: handle missing or non-list messages gracefully
+            summary = ""
+            try:
+                summary = self.create_conversation_summary(conversation_id, current_intent)
+            except Exception as e:
+                print(f"Error creating conversation summary: {e}")
             recent_context = self.filter_context_by_intent_with_token_limit(
                 conversation_id, current_intent, max_tokens=1500, max_messages=10
             )

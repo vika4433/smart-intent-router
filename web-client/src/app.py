@@ -1,3 +1,5 @@
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 import streamlit as st
 import re
 import os
@@ -7,39 +9,51 @@ from dotenv import load_dotenv
 from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 import json
+import nest_asyncio
+
+# Apply nest_asyncio to patch the event loop
+nest_asyncio.apply()
 
 # Load environment variables
 load_dotenv()
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:3000")
 MCP_ROUTE_URL = f"{SERVER_URL.rstrip('/')}/mcp/"
 
-# Global async MCP session for Streamlit
-class MCPClient:
-    def __init__(self):
-        pass  # No persistent session/streams
+# --- Persistent event loop and MCP session using st.cache_resource ---
+@st.cache_resource
+def get_async_loop():
+    return asyncio.new_event_loop()
 
-    async def call_tool(self, tool: str, tool_args: dict) -> str:
+@st.cache_resource
+def get_mcp_session():
+    loop = get_async_loop()
+    async def init():
         streams_context = streamablehttp_client(url=MCP_ROUTE_URL)
         read_stream, write_stream, _ = await streams_context.__aenter__()
         session_context = ClientSession(read_stream, write_stream)
         session = await session_context.__aenter__()
         await session.initialize()
-        try:
-            result = await session.call_tool(tool, tool_args)
-            # Robustly extract text from CallToolResult
-            if hasattr(result, 'content'):
-                content = result.content
-                if isinstance(content, list) and len(content) > 0 and hasattr(content[0], 'text'):
-                    return content[0].text
-                elif isinstance(content, str):
-                    return content
-                else:
-                    return str(content)
+        return session, streams_context
+    return loop.run_until_complete(init())
+
+session, streams_context = get_mcp_session()
+
+# --- Synchronous wrapper for async tool calls ---
+def call_tool(tool, tool_args):
+    loop = get_async_loop()
+    async def _call():
+        result = await session.call_tool(tool, tool_args)
+        if hasattr(result, 'content'):
+            content = result.content
+            if isinstance(content, list) and len(content) > 0 and hasattr(content[0], 'text'):
+                return content[0].text
+            elif isinstance(content, str):
+                return content
             else:
-                return str(result)
-        finally:
-            await session.__aexit__(None, None, None)
-            await streams_context.__aexit__(None, None, None)
+                return str(content)
+        else:
+            return str(result)
+    return loop.run_until_complete(_call())
 
 def clean_response(response: str) -> str:
     response = re.sub(r'```(\w*)', r'\n```\1\n', response)
@@ -148,19 +162,14 @@ def display_chat_message(role: str, content):
 def initialize_session_and_conversation():
     # Step 1: Create session (only if not already in session_state)
     tool_args = {"user_id": "user"}
-    try:
-        loop = asyncio.get_event_loop()
-    except RuntimeError:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-    response = loop.run_until_complete(st.session_state.mcp_client.call_tool("create_session", tool_args))
+    response = call_tool("create_session", tool_args)
     session_id = extract_session_id(response)
     st.session_state.session_id = session_id
 
     # Step 2: Get conversations for this user
     conversation_id = None
     tool_args = {"user_id": "user"}
-    response = loop.run_until_complete(st.session_state.mcp_client.call_tool("get_conversations", tool_args))
+    response = call_tool("get_conversations", tool_args)
     try:
         conversations = response["conversations"] if isinstance(response, dict) else eval(response)["conversations"]
         if conversations and isinstance(conversations, list) and len(conversations) > 0:
@@ -171,7 +180,7 @@ def initialize_session_and_conversation():
     # Step 3: If no conversation, create one
     if not conversation_id and session_id:
         tool_args = {"user_id": "user", "session_id": session_id, "title": "New Conversation"}
-        response = loop.run_until_complete(st.session_state.mcp_client.call_tool("create_conversation", tool_args))
+        response = call_tool("create_conversation", tool_args)
         try:
             conversation_id = response["conversation_id"] if isinstance(response, dict) else eval(response)["conversation_id"]
         except Exception:
@@ -182,7 +191,7 @@ def initialize_session_and_conversation():
     st.session_state.messages = []
     if conversation_id:
         tool_args = {"conversation_id": conversation_id}
-        response = loop.run_until_complete(st.session_state.mcp_client.call_tool("get_messages", tool_args))
+        response = call_tool("get_messages", tool_args)
         try:
             # response is expected to be a dict with key 'conversation' containing a list of messages
             if isinstance(response, dict):
@@ -218,12 +227,17 @@ def main():
     """, unsafe_allow_html=True)
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    if "mcp_client" not in st.session_state:
-        st.session_state.mcp_client = MCPClient()
     # Only initialize session/conversation once per Streamlit session
     if "initialized" not in st.session_state or not st.session_state.initialized:
         initialize_session_and_conversation()
         st.session_state.initialized = True
+    # Clear Chat button
+    if st.button("🧹 Clear Chat", help="Delete all messages for this conversation"):
+        tool_args = {"conversation_id": st.session_state.conversation_id}
+        response = call_tool("delete_messages", tool_args)
+        # Clear local chat history
+        st.session_state.messages = []
+        st.rerun()
     # Display chat history
     for msg in st.session_state.messages:
         display_chat_message(msg["role"], msg["content"])
@@ -238,12 +252,7 @@ def main():
                 "session_id": st.session_state.session_id,
                 "conversation_id": st.session_state.conversation_id
             }
-            try:
-                loop = asyncio.get_event_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-            response = loop.run_until_complete(st.session_state.mcp_client.call_tool("route_request", tool_args))
+            response = call_tool("route_request", tool_args)
             # Try to parse as JSON, extract 'response' if present, store full dict if possible
             response_obj = None
             if isinstance(response, str):

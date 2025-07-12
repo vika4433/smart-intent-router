@@ -4,8 +4,10 @@ import os
 import dotenv
 import logging
 import sys
+import warnings
 from pathlib import Path
 
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 from mcp.server.fastmcp import FastMCP
 from utils.config_loader import ConfigLoader, CONFIG_PATH
@@ -31,14 +33,14 @@ conversation_manager = ConversationManager(repository_instance)
 
 @mcp.tool(name="classify_intent")
 async def classify_intent_tool(message: str) -> dict:
-    language = detect_language(message)
+    #language = detect_language(message)
     intent = classify_intent(message, config) or DEFAULT_INTENT
-    model_info = select_llm_model(intent, language, config)
+    #model_info = select_llm_model(intent, language, config)
     return {
         "intent": intent,
-        "language": language,
-        "model_info": model_info,
-        "message": "Intent classified successfully. Use route_with_intent() to send to model."
+        #"language": language,
+        #"model_info": model_info,
+        "message": "Intent classified successfully."
     }
 
 @mcp.tool(name="detect_language")
@@ -186,6 +188,12 @@ async def check_session(session_id: str) -> dict:
     if not session:
         return {"active": False}
     return {"active": True, "expires_at": session["expires_at"].isoformat()}
+
+@mcp.tool()
+async def delete_messages(conversation_id: str) -> dict:
+    """Clear all messages for a given conversation."""
+    conversation_manager.repo.clear_messages(conversation_id)
+    return {"success": True}
 
 
 

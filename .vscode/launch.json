@@ -8,21 +8,13 @@
       "program": "${workspaceFolder}/smart-intent-router-server/src/mcp_server/server.py",
       "console": "integratedTerminal"
     },
-    {
-      "name": "Run Test Client",
-      "type": "python",
-      "request": "launch",
-      "program": "${workspaceFolder}/tests/test_mcp_client.py",
-      "console": "integratedTerminal"
-    },
     // {
-    //   "name": "Run Web Client",
+    //   "name": "Run Test Client",
     //   "type": "python",
     //   "request": "launch",
-    //   "program": "${workspaceFolder}/web-client/src/app.py",
-    //   "console": "integratedTerminal",
-    //   "envFile": "${workspaceFolder}/.env"
-    // }
+    //   "program": "${workspaceFolder}/tests/test_mcp_client.py",
+    //   "console": "integratedTerminal"
+    // },
     {
     "name": "Run Web Client",
     "type": "python",
@@ -39,14 +31,14 @@
     }
   ],
   "compounds": [
-    {
-      "name": "Run Server and Test Client",
-      "configurations": [
-        "Run Test Client",
-        "Run MCP Server"
-      ],
-      "stopAll": true
-    },
+    // {
+    //   "name": "Run Server and Test Client",
+    //   "configurations": [
+    //     "Run Test Client",
+    //     "Run MCP Server"
+    //   ],
+    //   "stopAll": true
+    // },
     {
       "name": "Run Server and Web Client",
       "configurations": [

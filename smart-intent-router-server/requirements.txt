@@ -6,3 +6,8 @@ httpx
 modelcontextprotocol
 langdetect
 langid
+fastapi
+uvicorn[standard]
+websockets
+tiktoken
+pymongo

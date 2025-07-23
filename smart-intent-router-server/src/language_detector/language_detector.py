@@ -1,5 +1,10 @@
 from langdetect import detect, DetectorFactory
-import langid
+try:
+    import langid
+    langid_available = True
+except ImportError:
+    langid_available = False
+    print("Warning: langid not available, using langdetect only")
 
 # Ensure reproducibility for langdetect
 DetectorFactory.seed = 0
@@ -27,10 +32,14 @@ def detect_language(text: str) -> str:
             # Use langdetect for short texts
             return detect(text)
         else:
-            # Use langid for long texts
-            lang, confidence = langid.classify(text)
-            if confidence < 0.8:
-                return "unknown"
-            return lang
+            # Use langid for long texts if available, otherwise fallback to langdetect
+            if langid_available:
+                lang, confidence = langid.classify(text)
+                if confidence < 0.8:
+                    return "unknown"
+                return lang
+            else:
+                # Fallback to langdetect for long texts
+                return detect(text)
     except Exception:
         return "unknown"

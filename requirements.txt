@@ -9,4 +9,8 @@ ipykernel
 httpx
 pymongo
 tiktoken
-
+fastapi
+uvicorn[standard]
+websockets
+requests
+nest-asyncio

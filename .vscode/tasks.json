@@ -1,0 +1,56 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "kill-server-if-running",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "echo 'Checking if server is running on port 8000...'; if lsof -ti :8000 > /dev/null 2>&1; then echo 'Found process on port 8000, killing it...'; lsof -ti :8000 | xargs kill -9; sleep 1; echo 'Process killed.'; else echo 'No process found on port 8000.'; fi"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "wait-for-server",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "echo 'Waiting for FastAPI server to start...'; for i in {1..60}; do if curl -s http://localhost:8000/health > /dev/null 2>&1; then echo 'Server is ready!'; exit 0; fi; echo 'Attempt $i: Server not ready, waiting...'; sleep 2; done; echo 'Server failed to start within 120 seconds'; exit 1"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "wait-for-server-long",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-c",
+                "echo 'Waiting extra time for FastAPI server to start in compound mode...'; sleep 5; for i in {1..60}; do if curl -s http://localhost:8000/health > /dev/null 2>&1; then echo 'Server is ready!'; exit 0; fi; echo 'Attempt $i: Server not ready, waiting...'; sleep 3; done; echo 'Server failed to start within 180 seconds'; exit 1"
+            ],
+            "group": "build",
+            "presentation": {
+                "echo": true,
+                "reveal": "always",
+                "focus": false,
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

@@ -2,48 +2,54 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run MCP Server",
-      "type": "python",
+      "name": "Run FastAPI Server Only",
+      "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/smart-intent-router-server/src/mcp_server/server.py",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/smart-intent-router-server/src/main.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}/smart-intent-router-server",
+      "python": "${workspaceFolder}/venv_new/bin/python",
+      "preLaunchTask": "kill-server-if-running"
     },
-    // {
-    //   "name": "Run Test Client",
-    //   "type": "python",
-    //   "request": "launch",
-    //   "program": "${workspaceFolder}/tests/test_mcp_client.py",
-    //   "console": "integratedTerminal"
-    // },
     {
-    "name": "Run Web Client",
-    "type": "python",
-    "request": "launch",
-    "module": "streamlit",
-    "args": [
-        "run",
-        "${workspaceFolder}/web-client/src/app.py",
-        "--server.port",
-        "8501"
-    ],
-    "console": "integratedTerminal",
-    "envFile": "${workspaceFolder}/.env"
+      "name": "Run Web Client Only",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": [
+          "run",
+          "${workspaceFolder}/web-client/src/app.py",
+          "--server.port",
+          "8505"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "python": "${workspaceFolder}/venv_new/bin/python",
+      "preLaunchTask": "wait-for-server"
+    },
+    {
+      "name": "Run Web Client (Compound Mode)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "streamlit",
+      "args": [
+          "run",
+          "${workspaceFolder}/web-client/src/app.py",
+          "--server.port",
+          "8505"
+      ],
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "python": "${workspaceFolder}/venv_new/bin/python",
+      "preLaunchTask": "wait-for-server-long"
     }
   ],
   "compounds": [
-    // {
-    //   "name": "Run Server and Test Client",
-    //   "configurations": [
-    //     "Run Test Client",
-    //     "Run MCP Server"
-    //   ],
-    //   "stopAll": true
-    // },
     {
       "name": "Run Server and Web Client",
       "configurations": [
-        "Run Web Client",
-        "Run MCP Server"
+        "Run FastAPI Server Only",
+        "Run Web Client (Compound Mode)"
       ],
       "stopAll": true
     }

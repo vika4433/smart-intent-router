@@ -115,14 +115,18 @@ When multiple models are available for the same intent and language:
 3. **Default handling**: Falls back to `default_model` if no suitable match is found
 
 #### System Templates
-- **`system_templates`**: Custom system prompts for each intent type
-- Customize these messages to optimize model behavior for specific tasks
+- **`system_templates`**: Custom system messages for each intent type
+- Provides context-specific prompting for better responses
 
-#### Database Configuration
-- **`database`**: MongoDB connection settings
-  - `connection_string`: MongoDB URI (local or remote)
-  - `database_name`: Database name for the application
-  - Collections for conversations and sessions
+#### AI Router Configuration
+- **`ai_router.system_prompt`**: System prompt for AI-driven routing
+- Defines how the orchestrating LLM should behave and use tools/resources
+- Customizable instructions for model selection and tool usage
+
+#### Database Settings
+- **MongoDB configuration** for persistent storage
+- Configurable database and collection names
+- Connection string for local or remote MongoDB instances
 
 ### Example Configuration Structure
 ```yaml
@@ -147,6 +151,11 @@ system_templates:
 #### Intent Templates
 - **`system_templates`**: Custom system messages for each intent type
 - Provides context-specific prompting for better responses
+
+#### AI Router Configuration
+- **`ai_router.system_prompt`**: System prompt for AI-driven routing
+- Defines how the orchestrating LLM should behave and use tools/resources
+- Customizable instructions for model selection and tool usage
 
 #### Database Settings
 - **MongoDB configuration** for persistent storage

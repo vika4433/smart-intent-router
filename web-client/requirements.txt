@@ -1,2 +1,6 @@
 gradio
 streamlit
+requests
+python-dotenv
+mcp
+nest-asyncio

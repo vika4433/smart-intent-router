@@ -15,7 +15,7 @@ class ConfigLoader:
         self.load_config()
 
     def load_config(self):
-        with open(self.config_path, "r") as f:
+        with open(self.config_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
             # TODO: Validate config format here!
         with self.lock:

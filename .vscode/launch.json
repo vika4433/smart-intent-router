@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}/smart-intent-router-server/src/main.py",
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}/smart-intent-router-server",
-      "python": "${workspaceFolder}/venv_new/bin/python",
+      "python": "${workspaceFolder}/venv/Scripts/python.exe",
       "preLaunchTask": "kill-server-if-running"
     },
     {
@@ -24,7 +24,7 @@
       ],
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env",
-      "python": "${workspaceFolder}/venv_new/bin/python",
+      "python": "${workspaceFolder}/venv/Scripts/python.exe",
       "preLaunchTask": "wait-for-server"
     },
     {
@@ -40,7 +40,7 @@
       ],
       "console": "integratedTerminal",
       "envFile": "${workspaceFolder}/.env",
-      "python": "${workspaceFolder}/venv_new/bin/python",
+      "python": "${workspaceFolder}/venv/Scripts/python.exe",
       "preLaunchTask": "wait-for-server-long"
     }
   ],

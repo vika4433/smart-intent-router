@@ -1,0 +1,5 @@
+# Add/Update these to ensure compatibility and avoid async errors
+httpx>=0.27.0
+httpcore>=1.0.4
+anyio>=4.0.0
+httpx-sse>=0.4.0

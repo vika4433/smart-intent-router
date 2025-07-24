@@ -249,32 +249,6 @@ The system now fetches available models directly from LM Studio:
 - Configurable database and collection names
 - Connection string for local or remote MongoDB instances
 
-### Example Configuration Structure
-```yaml
-# Example: Customizable template - modify as needed
-intents: [code, math, translation, creative_writing, general]
-languages: [en, es, fr]  # Add your supported languages
-
-models:
-  # Orchestrator model for AI-driven routing
-  - model_name: "llama-2-7b-chat-hf-function-calling-v2"
-    endpoint: "http://localhost:1234/v1/chat/completions"
-    context_length: 4096
-    weight: 1.0
-    is_orchestrator: true     # This model can make routing decisions
-    supported_intents: [general, translation, creative_writing]
-    supported_languages: [en, es, fr]
-    enabled: true
-    
-  # Specialist models
-  - model_name: "qwen2.5-coder-7b-instruct"
-    endpoint: "http://localhost:1234/v1/chat/completions"
-    context_length: 32768
-    weight: 2.0              # Higher weight = higher priority
-    is_orchestrator: false   # This is a specialist model
-    supported_intents: [code]
-    supported_languages: [en]
-    enabled: true
     
 # AI Router configuration for AI agent behavior
 ai_router:
@@ -371,7 +345,7 @@ system_templates:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-username/smart-intent-router.git
+   git clone https://github.com/vika4433/smart-intent-router.git
    cd smart-intent-router
    ```
 
@@ -381,6 +355,7 @@ system_templates:
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
+   note: install python 3.11.2
 
 3. **Download and configure models in LM Studio**
    - Download LM Studio from [lmstudio.ai](https://lmstudio.ai)
@@ -459,41 +434,6 @@ The system supports two routing modes that you can choose between:
 - Context-aware and adaptive to conversation flow
 - Can handle complex routing scenarios and multi-step orchestration
 - Better for conversational AI, ambiguous requests, and learning from patterns
-
-**Web Client Configuration**: The Streamlit interface allows you to toggle between routing modes in the interface.
-
-### Model Weight Configuration Example
-When you have multiple models that can handle the same intent, use weights to set priority:
-
-```yaml
-models:
-  # Orchestrator model for AI-driven routing
-  - model_name: "llama-2-7b-chat-hf-function-calling-v2"
-    weight: 1.0
-    is_orchestrator: true        # Can make routing decisions
-    supported_intents: ["general", "translation", "creative_writing"]
-    
-  # Specialist models  
-  - model_name: "qwen2.5-coder-7b-instruct"
-    weight: 2.0        # Higher priority for code tasks
-    is_orchestrator: false       # Specialist model only
-    supported_intents: ["code"]
-    
-  - model_name: "llama-3.2-3b-instruct"  
-    weight: 1.0        # Lower priority backup
-    is_orchestrator: false
-    supported_intents: ["code", "general"]
-    
-  - model_name: "wizardmath-7b"
-    weight: 3.0        # Highest priority for math
-    is_orchestrator: false
-    supported_intents: ["math"]
-```
-
-**How selection works**:
-- **Rule-based routing**: Uses weight-based selection (highest weight wins)
-- **AI agent routing**: The AI agent intelligently reasons about weights, context, model capabilities, and conversation history
-- **Orchestrator agent selection**: The first enabled model with `is_orchestrator: true` becomes the AI agent
 
 ### Cross-Platform Development
 

@@ -10,12 +10,17 @@ import threading
 from typing import Optional
 from dotenv import load_dotenv
 
+from sr_logger import SRLogger
+import uuid
+from datetime import datetime
+
 # Apply nest_asyncio to patch the event loop (not needed for HTTP client)
 
 # Load environment variables
 load_dotenv()
 SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8000")  # Updated to FastAPI port
-
+# Initialize logger
+logger = SRLogger()
 # --- Helper function to check server status ---
 def check_server_status():
     """Check if the Smart Intent Router server is reachable"""
@@ -216,7 +221,7 @@ class RestAPIClient:
             response = self.session.post(
                 f"{self.base_url}/route_request_ai",
                 json=payload,
-                timeout=240  # Increased timeout for AI processing with LM Studio
+                timeout=1200  # Increased timeout for AI processing with LM Studio
             )
             response.raise_for_status()
             return response.json()
@@ -244,7 +249,7 @@ class RestAPIClient:
             response = self.session.get(
                 f"{self.base_url}/route_request_ai_stream",
                 params=params,
-                timeout=240,  # Longer timeout for streaming
+                timeout=1200,  # Longer timeout for streaming
                 stream=True
             )
             response.raise_for_status()
@@ -363,6 +368,9 @@ def display_chat_message(role: str, content):
                 content = json.dumps(content, indent=2, ensure_ascii=False)
             except Exception:
                 content = str(content)
+    data = {"role": role, "content": content}
+    # Log the message   
+    logger.write_log(st.session_state.session_id, "display_chat_message", data)
     # Only show content in the bubble for user messages
     if role == "user":
         bubble_html = f"""
@@ -435,6 +443,10 @@ def initialize_session_and_conversation():
                         st.session_state.messages.append(msg)
         except Exception:
             pass
+        # Log the interaction
+        data =response
+        logger.write_log(st.session_state.session_id,  "main,chat_interaction", data)
+
 
 def display_real_time_reasoning(user_message: str):
     """Display the AI reasoning process in real-time with step-by-step notifications"""
@@ -1031,7 +1043,8 @@ def main():
     if prompt := st.chat_input("Type your question or request (code, writing, math, translation, etc.)..."):
         st.session_state.messages.append({"role": "user", "content": prompt})
         display_chat_message("user", prompt)
-        
+        data = {"role":"user", "content": prompt}
+        logger.write_log(st.session_state.session_id,  "main,handle prompt", data)
         if show_reasoning:
             # Use real-time reasoning mode
             with st.spinner("Processing with real-time reasoning..."):
